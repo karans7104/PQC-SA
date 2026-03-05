@@ -1,4 +1,4 @@
-# Kybesp32 — CRYSTALS-KYBER on ESP32
+# CRYSTALS-KYBER on ESP32
 
 An implementation of the [CRYSTALS-KYBER](https://www.pq-crystals.org/kyber/) Key Encapsulation Mechanism (KEM) for the ESP32 platform, built on the [official reference implementation](https://github.com/pq-crystals/kyber). It supports dual-core parallelization and hardware-accelerated SHA/AES via the ESP32's built-in peripherals.
 
@@ -60,6 +60,12 @@ After flashing, the firmware runs a KEM round-trip (keygen → encapsulation →
 ├── main/
 │   ├── main.c          Entry point (app_main) — runs KEM benchmark
 │   └── CMakeLists.txt
+├── sim/
+│   ├── main_sim.c           PC KEM simulation (100 iterations, CSV export)
+│   ├── security_analysis.c  6-test security & correctness suite
+│   ├── randombytes_pc.c     Windows CryptoAPI RNG shim
+│   ├── build_and_run.bat    Single-level build script
+│   └── run_full_analysis.bat Multi-level comparison script
 ├── CMakeLists.txt      Top-level build config with compile definitions
 └── README.md
 ```
@@ -123,9 +129,63 @@ SHA_ACC=1, AES_ACC=1, INDCPA_KEYPAIR_DUAL=1, INDCPA_ENC_DUAL=1, INDCPA_DEC_DUAL=
 - Combined optimizations achieve up to **1.84x** improvement over the single-core baseline
 - Decapsulation benefits least from dual-core since `INDCPA_DEC_DUAL` is disabled (it actually slows things down due to synchronization overhead)
 
+## PC Simulation & Analysis Framework
+
+A standalone PC simulation framework in `sim/` enables testing, benchmarking, and security validation without ESP32 hardware.
+
+### Simulation Components
+
+| File | Purpose |
+|------|---------|
+| `main_sim.c` | KEM round-trip simulation with CSV timing export |
+| `security_analysis.c` | 6-test security & correctness validation suite |
+| `randombytes_pc.c` | Windows CryptoAPI RNG shim (replaces `esp_fill_random`) |
+| `build_and_run.bat` | Single-command build for one security level |
+| `run_full_analysis.bat` | Multi-level comparison across Kyber-512/768/1024 |
+
+### Security Analysis Test Suite
+
+The `security_analysis.c` suite validates:
+
+1. **KEM Round-Trip Correctness** — Shared secrets match after encap/decap across 50 iterations
+2. **Ciphertext Tamper Detection** — Single-bit flips in ciphertext produce different shared secrets (IND-CCA2)
+3. **Key Independence** — Different keypairs produce distinct shared secrets from the same ciphertext flow
+4. **Wrong Secret Key Rejection** — Decapsulation with an incorrect secret key never recovers the original shared secret
+5. **Performance Benchmark** — Per-operation timing (keygen, encap, decap) with min/avg/max statistics
+6. **NIST Spec Compliance** — Key and ciphertext sizes match FIPS 203 specifications exactly
+
+### Multi-Level Performance Comparison (PC Simulation)
+
+All tests passed across all three security levels. Benchmark results (50 iterations each, Windows PC):
+
+| Operation | Kyber-512 Avg (ms) | Kyber-768 Avg (ms) | Kyber-1024 Avg (ms) |
+|-----------|-------------------|-------------------|---------------------|
+| Key Generation | 0.827 | 0.497 | 0.649 |
+| Encapsulation | 0.493 | 0.346 | 0.453 |
+| Decapsulation | 0.224 | 0.200 | 0.322 |
+
+### NIST FIPS 203 Key Size Compliance
+
+| Parameter | Kyber-512 | Kyber-768 | Kyber-1024 |
+|-----------|-----------|-----------|------------|
+| Public Key | 800 B | 1184 B | 1568 B |
+| Secret Key | 1632 B | 2400 B | 3168 B |
+| Ciphertext | 768 B | 1088 B | 1568 B |
+| Shared Secret | 32 B | 32 B | 32 B |
+
+### Running the Analysis
+
+```bash
+cd sim
+
+# Single level (Kyber-512)
+build_and_run.bat
+
+# Full multi-level comparison
+run_full_analysis.bat
+```
+
 ## Credits
 
 Based on the [CRYSTALS-KYBER reference implementation](https://github.com/pq-crystals/kyber).
-
-
 

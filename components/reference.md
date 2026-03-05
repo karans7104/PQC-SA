@@ -1,1 +1,1 @@
-This code is copied from https://github.com/pq-crystals/kyber/tree/master/ref (2022-09-18)
+The core cryptographic primitives in this directory are based on the CRYSTALS-KYBER reference implementation (https://github.com/pq-crystals/kyber/tree/master/ref), adapted for the ESP32 platform with hardware acceleration and dual-core parallelization support.
