@@ -1,8 +1,21 @@
-# CRYSTALS-KYBER on ESP32
+# CRYSTALS-KYBER on ESP32 — FIPS 203 Gap Analysis & DAG Scheduling
 
-An implementation of the [CRYSTALS-KYBER](https://www.pq-crystals.org/kyber/) Key Encapsulation Mechanism (KEM) for the ESP32 platform, built on the [official reference implementation](https://github.com/pq-crystals/kyber). It supports dual-core parallelization and hardware-accelerated SHA/AES via the ESP32's built-in peripherals.
+This project extends the work of **Segatz and Al Hafiz (2022)**, *"Efficient Implementation of CRYSTALS-KYBER Key Encapsulation Mechanism on ESP32"*, by adding two original research contributions:
 
-## Features
+1. **FIPS 203 Compliance Gap Analysis** — comparing the 2022 draft-era KYBER implementation against the finalized [NIST FIPS 203 (ML-KEM)](https://csrc.nist.gov/pubs/fips/203/final) standard
+2. **DAG Scheduling Analysis** — modeling the Kyber algorithm as a Directed Acyclic Graph, instrumenting individual sub-task timings, and applying Critical Path Method (CPM) and List Scheduling to find the theoretically optimal 2-core schedule vs. Segatz's empirical hand-partitioned schedule
+
+## Attribution
+
+| Component | Source | License |
+|-----------|--------|---------|
+| ESP32 Kyber implementation | [github.com/fsegatz/kybesp32](https://github.com/fsegatz/kybesp32) — Segatz & Al Hafiz (2022) | Academic |
+| KYBER reference code | [github.com/pq-crystals/kyber](https://github.com/pq-crystals/kyber) — Bos, Ducas, Kiltz, Lepoint, Lyubashevsky, Schwabe, Shanck, Stehlé | Public domain (CC0) |
+| Simulation framework (`sim/`) | **Original contribution** — this project | — |
+| FIPS 203 gap analysis | **Original contribution** — this project | — |
+| DAG scheduling analysis | **Original contribution** — this project | — |
+
+## Base Implementation Features
 
 - **Kyber-512 / Kyber-768 / Kyber-1024** support (configurable via `KYBER_K`)
 - **90s variant** using AES-256-CTR + SHA-256/512 (toggle with `KYBER_90S`)
@@ -12,8 +25,13 @@ An implementation of the [CRYSTALS-KYBER](https://www.pq-crystals.org/kyber/) Ke
 
 ## Prerequisites
 
+### ESP32 Hardware Build (original — requires hardware)
 - [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) v5.0 or later
-- An ESP32 development board (tested on [ESP32-S3-DevKitC-1](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html))
+- ESP32 development board (tested on [ESP32-S3-DevKitC-1](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html))
+
+### PC Simulation & Analysis (original contribution — no hardware needed)
+- GCC (MinGW on Windows)
+- Python 3.8+ with `matplotlib` and `numpy`
 
 ## Build Instructions
 
@@ -41,32 +59,43 @@ After flashing, the firmware runs a KEM round-trip (keygen → encapsulation →
 ## Project Structure
 
 ```
-├── components/
-│   ├── aes256ctr/      AES-256 in CTR mode
-│   ├── cbd/            Centered Binomial Distribution sampling
-│   ├── common/         Shared parameters and config (params.h)
-│   ├── fips202/        SHAKE-128/256, SHA3-256/512 (Keccak)
-│   ├── indcpa/         IND-CPA public-key encryption (+ dual-core variants)
-│   ├── kem/            Key Encapsulation Mechanism (keygen, enc, dec)
-│   ├── kex/            Key Exchange protocols (UAKE, AKE)
-│   ├── ntt/            Number Theoretic Transform
-│   ├── poly/           Polynomial operations
-│   ├── polyvec/        Polynomial vector operations
-│   ├── randombytes/    RNG wrapper using esp_fill_random
-│   ├── reduce/         Montgomery and Barrett reduction
-│   ├── sha2/           SHA-256 and SHA-512
-│   ├── symmetric/      Symmetric primitive abstractions (AES/SHAKE)
-│   └── verify/         Constant-time comparison and conditional move
-├── main/
-│   ├── main.c          Entry point (app_main) — runs KEM benchmark
-│   └── CMakeLists.txt
-├── sim/
-│   ├── main_sim.c           PC KEM simulation (100 iterations, CSV export)
-│   ├── security_analysis.c  6-test security & correctness suite
-│   ├── randombytes_pc.c     Windows CryptoAPI RNG shim
-│   ├── build_and_run.bat    Single-level build script
-│   └── run_full_analysis.bat Multi-level comparison script
-├── CMakeLists.txt      Top-level build config with compile definitions
+├── components/                 # Base Kyber implementation (Segatz & Al Hafiz 2022)
+│   ├── aes256ctr/              AES-256 in CTR mode
+│   ├── cbd/                    Centered Binomial Distribution sampling
+│   ├── common/                 Shared parameters and config (params.h)
+│   ├── fips202/                SHAKE-128/256, SHA3-256/512 (Keccak)
+│   ├── indcpa/                 IND-CPA public-key encryption (+ dual-core variants)
+│   ├── kem/                    Key Encapsulation Mechanism (keygen, enc, dec)
+│   ├── kex/                    Key Exchange protocols (UAKE, AKE)
+│   ├── ntt/                    Number Theoretic Transform
+│   ├── poly/                   Polynomial operations
+│   ├── polyvec/                Polynomial vector operations
+│   ├── randombytes/            RNG wrapper using esp_fill_random
+│   ├── reduce/                 Montgomery and Barrett reduction
+│   ├── sha2/                   SHA-256 and SHA-512
+│   ├── symmetric/              Symmetric primitive abstractions (AES/SHAKE)
+│   └── verify/                 Constant-time comparison and conditional move
+├── main/                       # ESP32 entry point
+├── sim/                        # *** ORIGINAL CONTRIBUTION ***
+│   ├── platform/
+│   │   └── randombytes_pc.c    Windows CryptoAPI RNG shim
+│   ├── validation/
+│   │   ├── round_trip_test.c   KEM correctness tests
+│   │   └── kat_vectors/        NIST ACVP Known Answer Test vectors
+│   ├── benchmarks/
+│   │   ├── benchmark.c         Timing benchmarks (keygen, encap, decap)
+│   │   └── task_profiler.c     Individual sub-task timing for DAG analysis
+│   ├── dag_analysis/
+│   │   ├── dag_tasks.h         Task dependency graph definitions
+│   │   ├── critical_path.py    Critical Path Method (CPM) computation
+│   │   └── list_scheduler.py   Optimal 2-core List Scheduling + Gantt chart
+│   ├── results/                Output CSVs, PNGs, analysis reports (gitignored)
+│   ├── build_validation.bat    Build and run correctness tests
+│   ├── build_benchmark.bat     Build and run timing benchmarks
+│   └── build_profiler.bat      Build task profiler + run DAG analysis
+├── docs/
+│   └── NIST.FIPS.203.pdf       FIPS 203 standard document
+├── CMakeLists.txt              Top-level ESP-IDF build config
 └── README.md
 ```
 
@@ -82,110 +111,45 @@ After flashing, the firmware runs a KEM round-trip (keygen → encapsulation →
 | `INDCPA_ENC_DUAL` | `0`, `1` | Dual-core encryption |
 | `INDCPA_DEC_DUAL` | `0`, `1` | Dual-core decryption |
 
-## Benchmark Results
+## ESP32 Hardware Benchmark Results (Segatz & Al Hafiz 2022)
 
-Tested on an [ESP32-S3-DevKitC-1](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html) at 160 MHz, ESP-IDF v5.0, GCC 8.4.0, no compiler optimization. Results for **Kyber-512 (90s variant)**:
+Tested on ESP32-S3-DevKitC-1 at 160 MHz, ESP-IDF v5.0, GCC 8.4.0, Kyber-512 (90s variant):
 
-### Scenario 1 — Single-core (all optimizations off)
+| Configuration | Key Generation | Encapsulation | Decapsulation | Speedup |
+|--------------|---------------|---------------|---------------|---------|
+| Single-core (baseline) | 2,439,083 | 2,736,256 | 2,736,256 | 1.00x |
+| Dual-core | 2,007,689 | 2,243,652 | 2,471,286 | ~1.21x |
+| Dual-core + HW accel | 1,414,389 | 1,490,784 | 1,756,638 | ~1.84x |
 
-```cmake
-SHA_ACC=0, AES_ACC=0, INDCPA_KEYPAIR_DUAL=0, INDCPA_ENC_DUAL=0, INDCPA_DEC_DUAL=0
-```
-
-| Algorithm | Cycle Count |
-|-----------|------------|
-| Key Generation | 2,439,083 |
-| Encapsulation | 2,736,256 |
-| Decapsulation | 2,736,256 |
-
-### Scenario 2 — Dual-core
-
-```cmake
-SHA_ACC=0, AES_ACC=0, INDCPA_KEYPAIR_DUAL=1, INDCPA_ENC_DUAL=1, INDCPA_DEC_DUAL=0
-```
-
-| Algorithm | Cycle Count | Speedup |
-|-----------|------------|---------|
-| Key Generation | 2,007,689 | 1.21x |
-| Encapsulation | 2,243,652 | 1.22x |
-| Decapsulation | 2,471,286 | 1.20x |
-
-### Scenario 3 — Dual-core + Hardware Accelerators
-
-```cmake
-SHA_ACC=1, AES_ACC=1, INDCPA_KEYPAIR_DUAL=1, INDCPA_ENC_DUAL=1, INDCPA_DEC_DUAL=0
-```
-
-| Algorithm | Cycle Count | Speedup |
-|-----------|------------|---------|
-| Key Generation | 1,414,389 | 1.72x |
-| Encapsulation | 1,490,784 | 1.84x |
-| Decapsulation | 1,756,638 | 1.69x |
-
-### Key Findings
-
-- **Dual-core parallelization** yields ~20% speedup by splitting NTT/noise generation and matrix operations across two cores
-- **Hardware SHA + AES acceleration** provides an additional ~40-50% speedup on top of dual-core
-- Combined optimizations achieve up to **1.84x** improvement over the single-core baseline
-- Decapsulation benefits least from dual-core since `INDCPA_DEC_DUAL` is disabled (it actually slows things down due to synchronization overhead)
-
-## PC Simulation & Analysis Framework
-
-A standalone PC simulation framework in `sim/` enables testing, benchmarking, and security validation without ESP32 hardware.
-
-### Simulation Components
-
-| File | Purpose |
-|------|---------|
-| `main_sim.c` | KEM round-trip simulation with CSV timing export |
-| `security_analysis.c` | 6-test security & correctness validation suite |
-| `randombytes_pc.c` | Windows CryptoAPI RNG shim (replaces `esp_fill_random`) |
-| `build_and_run.bat` | Single-command build for one security level |
-| `run_full_analysis.bat` | Multi-level comparison across Kyber-512/768/1024 |
-
-### Security Analysis Test Suite
-
-The `security_analysis.c` suite validates:
-
-1. **KEM Round-Trip Correctness** — Shared secrets match after encap/decap across 50 iterations
-2. **Ciphertext Tamper Detection** — Single-bit flips in ciphertext produce different shared secrets (IND-CCA2)
-3. **Key Independence** — Different keypairs produce distinct shared secrets from the same ciphertext flow
-4. **Wrong Secret Key Rejection** — Decapsulation with an incorrect secret key never recovers the original shared secret
-5. **Performance Benchmark** — Per-operation timing (keygen, encap, decap) with min/avg/max statistics
-6. **NIST Spec Compliance** — Key and ciphertext sizes match FIPS 203 specifications exactly
-
-### Multi-Level Performance Comparison (PC Simulation)
-
-All tests passed across all three security levels. Benchmark results (50 iterations each, Windows PC):
-
-| Operation | Kyber-512 Avg (ms) | Kyber-768 Avg (ms) | Kyber-1024 Avg (ms) |
-|-----------|-------------------|-------------------|---------------------|
-| Key Generation | 0.827 | 0.497 | 0.649 |
-| Encapsulation | 0.493 | 0.346 | 0.453 |
-| Decapsulation | 0.224 | 0.200 | 0.322 |
-
-### NIST FIPS 203 Key Size Compliance
-
-| Parameter | Kyber-512 | Kyber-768 | Kyber-1024 |
-|-----------|-----------|-----------|------------|
-| Public Key | 800 B | 1184 B | 1568 B |
-| Secret Key | 1632 B | 2400 B | 3168 B |
-| Ciphertext | 768 B | 1088 B | 1568 B |
-| Shared Secret | 32 B | 32 B | 32 B |
-
-### Running the Analysis
+## Running the Analysis Pipeline
 
 ```bash
 cd sim
 
-# Single level (Kyber-512)
-build_and_run.bat
+# 1. Correctness validation
+build_validation.bat
 
-# Full multi-level comparison
-run_full_analysis.bat
+# 2. Performance benchmarks
+build_benchmark.bat
+
+# 3. Full DAG analysis pipeline (profile + CPM + scheduling)
+build_profiler.bat
 ```
 
-## Credits
+### Output Files
 
-Based on the [CRYSTALS-KYBER reference implementation](https://github.com/pq-crystals/kyber).
+| File | Description |
+|------|-------------|
+| `results/task_times_kyber512.csv` | Per-subtask timing data (Kyber-512) |
+| `results/task_times_kyber768.csv` | Per-subtask timing data (Kyber-768) |
+| `results/task_times_kyber1024.csv` | Per-subtask timing data (Kyber-1024) |
+| `results/critical_path_analysis.txt` | CPM analysis report |
+| `results/optimal_schedule.png` | Gantt chart: optimal vs. Segatz schedule |
+| `results/benchmark_kyberXXX.csv` | Raw benchmark timing data |
+
+## References
+
+1. Segatz, F. & Al Hafiz, K. (2022). *Efficient Implementation of CRYSTALS-KYBER Key Encapsulation Mechanism on ESP32*. [github.com/fsegatz/kybesp32](https://github.com/fsegatz/kybesp32)
+2. Bos, J. et al. *CRYSTALS-Kyber: a CCA-secure module-lattice-based KEM*. [pq-crystals.org/kyber](https://pq-crystals.org/kyber/)
+3. NIST. *FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard*. 2024. [csrc.nist.gov/pubs/fips/203/final](https://csrc.nist.gov/pubs/fips/203/final)
 
