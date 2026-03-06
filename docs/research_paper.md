@@ -248,66 +248,66 @@ Future work should pursue three directions. First, the optimal schedule identifi
 
 ## References
 
-[1] Segatz, F. and Al Hafiz, M. I. A. (2022). Efficient Implementation of CRYSTALS-KYBER Key Encapsulation Mechanism on ESP32. arXiv preprint arXiv:2503.10207 [cs.CR].
+[1] Segatz, F. and Al Hafiz, M. I. A. (2022). Efficient Implementation of CRYSTALS-KYBER Key Encapsulation Mechanism on ESP32. arXiv preprint arXiv:2503.10207 [cs.CR]. Available at: https://arxiv.org/abs/2503.10207
 
-[2] Avanzi, R., Bos, J., Ducas, L., Kiltz, E., Lepoint, T., Lyubashevsky, V., Schanck, J. M., Schwabe, P., Seiler, G., and Stehlé, D. (2021). CRYSTALS-KYBER Algorithm Specifications and Supporting Documentation (version 3.02). NIST Post-Quantum Cryptography Standardization, Round 3 Submission.
+[2] Avanzi, R., Bos, J., Ducas, L., Kiltz, E., Lepoint, T., Lyubashevsky, V., Schanck, J. M., Schwabe, P., Seiler, G., and Stehlé, D. (2021). CRYSTALS-KYBER Algorithm Specifications and Supporting Documentation (version 3.02). NIST Post-Quantum Cryptography Standardization, Round 3 Submission. Available at: https://pq-crystals.org/kyber/data/kyber-specification-round3-20210804.pdf
 
-[3] National Institute of Standards and Technology (NIST). (2022). NIST Announces First Four Quantum-Resistant Cryptographic Algorithms. NIST News, July 5, 2022.
+[3] National Institute of Standards and Technology (NIST). (2022). NIST Announces First Four Quantum-Resistant Cryptographic Algorithms. NIST News, July 5, 2022. Available at: https://www.nist.gov/news-events/news/2022/07/nist-announces-first-four-quantum-resistant-cryptographic-algorithms
 
-[4] National Institute of Standards and Technology (NIST). (2024). FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. Federal Information Processing Standards Publication 203, August 2024.
+[4] National Institute of Standards and Technology (NIST). (2024). FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. Federal Information Processing Standards Publication 203, August 2024. Available at: https://doi.org/10.6028/NIST.FIPS.203
 
 [5] Bos, J., Ducas, L., Kiltz, E., Lepoint, T., Lyubashevsky, V., Schanck, J. M., Schwabe, P., Seiler, G., and Stehlé, D. pq-crystals/kyber: Reference Implementation. GitHub. Available at: https://github.com/pq-crystals/kyber
 
-[6] Shor, P. W. (1999). Polynomial-Time Algorithms for Prime Factorization and Discrete Logarithms on a Quantum Computer. SIAM Review, 41(2), 303–332.
+[6] Shor, P. W. (1999). Polynomial-Time Algorithms for Prime Factorization and Discrete Logarithms on a Quantum Computer. SIAM Review, 41(2), 303–332. Available at: https://doi.org/10.1137/S0036144598347011
 
-[7] Langlois, A. and Stehlé, D. (2012). Worst-Case to Average-Case Reductions for Module Lattices. Cryptology ePrint Archive, Paper 2012/090.
+[7] Langlois, A. and Stehlé, D. (2012). Worst-Case to Average-Case Reductions for Module Lattices. Cryptology ePrint Archive, Paper 2012/090. Available at: https://eprint.iacr.org/2012/090
 
-[8] Fujisaki, E. and Okamoto, T. (1999). Secure Integration of Asymmetric and Symmetric Encryption Schemes. In Advances in Cryptology — CRYPTO '99, pp. 537–554. Springer Berlin Heidelberg.
+[8] Fujisaki, E. and Okamoto, T. (1999). Secure Integration of Asymmetric and Symmetric Encryption Schemes. In Advances in Cryptology — CRYPTO '99, pp. 537–554. Springer Berlin Heidelberg. Available at: https://doi.org/10.1007/3-540-48405-1_34
 
-[9] Shoup, V. (2000). Using Hash Functions as a Hedge against Chosen Ciphertext Attack. In Advances in Cryptology — EUROCRYPT 2000, pp. 275–288. Springer Berlin Heidelberg.
+[9] Shoup, V. (2000). Using Hash Functions as a Hedge against Chosen Ciphertext Attack. In Advances in Cryptology — EUROCRYPT 2000, pp. 275–288. Springer Berlin Heidelberg. Available at: https://doi.org/10.1007/3-540-45539-6_19
 
-[10] Bertoni, G., Daemen, J., Peeters, M., and Van Assche, G. (2011). The Keccak Reference. Submission to the NIST SHA-3 Competition.
+[10] Bertoni, G., Daemen, J., Peeters, M., and Van Assche, G. (2011). The Keccak Reference. Submission to the NIST SHA-3 Competition. Available at: https://keccak.team/files/Keccak-reference-3.0.pdf
 
 [11] Espressif Systems. (2022). ESP32 Technical Reference Manual, Version 4.7. Available at: https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf
 
 [12] Espressif Systems. ESP-IDF FreeRTOS (SMP). Available at: https://docs.espressif.com/projects/esp-idf/en/release-v5.0/esp32s3/api-guides/freertos-smp.html
 
-[13] Arm Limited. (2022). MbedTLS — TLS API References and Tutorials. Mbed OS 6 Documentation.
+[13] Arm Limited. (2022). MbedTLS — TLS API References and Tutorials. Mbed OS 6 Documentation. Available at: https://os.mbed.com/docs/mbed-os/v6.16/apis/tls-tutorials.html
 
 [14] FreeRTOS. API Reference: Semaphores. Available at: https://www.freertos.org/a00113.html
 
-[15] Bürstinghaus-Steinbach, K., Krauß, C., Niederhagen, R., and Schneider, M. (2020). Post-Quantum TLS on Embedded Systems: Integrating and Evaluating Kyber and SPHINCS+ with Mbed TLS. In Proceedings of the 15th ACM Asia Conference on Computer and Communications Security (ASIA CCS '20), pp. 841–852. ACM.
+[15] Bürstinghaus-Steinbach, K., Krauß, C., Niederhagen, R., and Schneider, M. (2020). Post-Quantum TLS on Embedded Systems: Integrating and Evaluating Kyber and SPHINCS+ with Mbed TLS. In Proceedings of the 15th ACM Asia Conference on Computer and Communications Security (ASIA CCS '20), pp. 841–852. ACM. Available at: https://doi.org/10.1145/3320269.3384725
 
-[16] Wang, B., Gu, X., and Yang, Y. (2020). Saber on ESP32. In Applied Cryptography and Network Security (ACNS 2020), pp. 421–440. Springer.
+[16] Wang, B., Gu, X., and Yang, Y. (2020). Saber on ESP32. In Applied Cryptography and Network Security (ACNS 2020), pp. 421–440. Springer. Available at: https://doi.org/10.1007/978-3-030-57808-4_21
 
-[17] Botros, L., Kannwischer, M. J., and Schwabe, P. (2019). Memory-Efficient High-Speed Implementation of Kyber on Cortex-M4. In Progress in Cryptology — AFRICACRYPT 2019, pp. 209–228. Springer.
+[17] Botros, L., Kannwischer, M. J., and Schwabe, P. (2019). Memory-Efficient High-Speed Implementation of Kyber on Cortex-M4. In Progress in Cryptology — AFRICACRYPT 2019, pp. 209–228. Springer. Available at: https://doi.org/10.1007/978-3-030-23696-0_11
 
 [18] Kannwischer, M. J., Petri, R., Rijneveld, J., Schwabe, P., and Stoffelen, K. PQM4: Post-Quantum Crypto Library for the ARM Cortex-M4. GitHub. Available at: https://github.com/mupq/pqm4
 
-[19] Heinz, D., Kannwischer, M. J., Land, G., Pöppelmann, T., Schwabe, P., and Sprenkels, D. (2022). First-Order Masked Kyber on ARM Cortex-M4. Cryptology ePrint Archive.
+[19] Heinz, D., Kannwischer, M. J., Land, G., Pöppelmann, T., Schwabe, P., and Sprenkels, D. (2022). First-Order Masked Kyber on ARM Cortex-M4. Cryptology ePrint Archive. Available at: https://eprint.iacr.org/2022/058
 
-[20] Ni, Z., Khalid, A., Kundi, D. S., O'Neill, M., and Liu, W. (2022). Efficient Pipelining Exploration for a High-Performance CRYSTALS-Kyber Accelerator. Cryptology ePrint Archive, Paper 2022/1093.
+[20] Ni, Z., Khalid, A., Kundi, D. S., O'Neill, M., and Liu, W. (2022). Efficient Pipelining Exploration for a High-Performance CRYSTALS-Kyber Accelerator. Cryptology ePrint Archive, Paper 2022/1093. Available at: https://eprint.iacr.org/2022/1093
 
-[21] Schöffel, M., Lauer, F., Rheinländer, C. C., and Wehn, N. (2022). Secure IoT in the Era of Quantum Computers — Where Are the Bottlenecks? Sensors, 22(7), 2484.
+[21] Schöffel, M., Lauer, F., Rheinländer, C. C., and Wehn, N. (2022). Secure IoT in the Era of Quantum Computers — Where Are the Bottlenecks? Sensors, 22(7), 2484. Available at: https://doi.org/10.3390/s22072484
 
-[22] Buchmann, J., Lauter, K., and Mosca, M. (2017). Postquantum Cryptography — State of the Art. IEEE Security & Privacy, 15(4), 12–13.
+[22] Buchmann, J., Lauter, K., and Mosca, M. (2017). Postquantum Cryptography — State of the Art. IEEE Security & Privacy, 15(4), 12–13. Available at: https://doi.org/10.1109/MSP.2017.3151326
 
-[23] Diffie, W. and Hellman, M. (1976). New Directions in Cryptography. IEEE Transactions on Information Theory, 22(6), 644–654.
+[23] Diffie, W. and Hellman, M. (1976). New Directions in Cryptography. IEEE Transactions on Information Theory, 22(6), 644–654. Available at: https://doi.org/10.1109/TIT.1976.1055638
 
-[24] Alagic, G., Cooper, D. A., Dang, Q., et al. (2022). Status Report on the Third Round of the NIST Post-Quantum Cryptography Standardization Process. NIST Internal Report.
+[24] Alagic, G., Cooper, D. A., Dang, Q., et al. (2022). Status Report on the Third Round of the NIST Post-Quantum Cryptography Standardization Process. NIST Internal Report. Available at: https://doi.org/10.6028/NIST.IR.8413
 
-[25] Kwok, Y.-K. and Ahmad, I. (1999). Static Scheduling Algorithms for Allocating Directed Task Graphs to Multiprocessors. ACM Computing Surveys, 31(4), 406–471.
+[25] Kwok, Y.-K. and Ahmad, I. (1999). Static Scheduling Algorithms for Allocating Directed Task Graphs to Multiprocessors. ACM Computing Surveys, 31(4), 406–471. Available at: https://doi.org/10.1145/344588.344618
 
-[26] Coffman, E. G. and Graham, R. L. (1972). Optimal Scheduling for Two-Processor Systems. Acta Informatica, 1(3), 200–213.
+[26] Coffman, E. G. and Graham, R. L. (1972). Optimal Scheduling for Two-Processor Systems. Acta Informatica, 1(3), 200–213. Available at: https://doi.org/10.1007/BF00288685
 
-[27] Graham, R. L. (1969). Bounds on Multiprocessing Timing Anomalies. SIAM Journal on Applied Mathematics, 17(2), 416–429.
+[27] Graham, R. L. (1969). Bounds on Multiprocessing Timing Anomalies. SIAM Journal on Applied Mathematics, 17(2), 416–429. Available at: https://doi.org/10.1137/0117039
 
-[28] Topcuoglu, H., Hariri, S., and Wu, M.-Y. (2002). Performance-Effective and Low-Complexity Task Scheduling for Heterogeneous Computing. IEEE Transactions on Parallel and Distributed Systems, 13(3), 260–274.
+[28] Topcuoglu, H., Hariri, S., and Wu, M.-Y. (2002). Performance-Effective and Low-Complexity Task Scheduling for Heterogeneous Computing. IEEE Transactions on Parallel and Distributed Systems, 13(3), 260–274. Available at: https://doi.org/10.1109/71.993206
 
-[29] Adam, T. L., Chandy, K. M., and Dickson, J. R. (1974). A Comparison of List Schedules for Parallel Processing Systems. Communications of the ACM, 17(12), 685–690.
+[29] Adam, T. L., Chandy, K. M., and Dickson, J. R. (1974). A Comparison of List Schedules for Parallel Processing Systems. Communications of the ACM, 17(12), 685–690. Available at: https://doi.org/10.1145/361604.361619
 
 [30] Segatz, F. and Al Hafiz, M. I. A. (2022). kybesp32: Kyber on ESP32. GitHub. Available at: https://github.com/fsegatz/kybesp32
 
-[31] Maier, A., Sharp, A., and Vagapov, Y. (2017). Comparative Analysis and Practical Implementation of the ESP32 Microcontroller Module for the Internet of Things. In 2017 Internet Technologies and Applications (ITA), pp. 143–148. IEEE.
+[31] Maier, A., Sharp, A., and Vagapov, Y. (2017). Comparative Analysis and Practical Implementation of the ESP32 Microcontroller Module for the Internet of Things. In 2017 Internet Technologies and Applications (ITA), pp. 143–148. IEEE. Available at: https://doi.org/10.1109/ITECHA.2017.8101926
 
-[32] Takagi, T. (2016). Post-Quantum Cryptography. Lecture Notes in Computer Science, vol. 9606. Springer.
+[32] Takagi, T. (2016). Post-Quantum Cryptography. Lecture Notes in Computer Science, vol. 9606. Springer. Available at: https://doi.org/10.1007/978-3-319-29360-8
