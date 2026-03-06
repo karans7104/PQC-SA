@@ -365,7 +365,257 @@ def main():
         png_path = os.path.join(args.results_dir, "optimal_schedule.png")
         generate_gantt_chart(results, png_path)
 
+    # Run sensitivity analysis if profiler data is available
+    run_sensitivity_analysis(times, args.results_dir, level)
+
     return 0
+
+
+# ================================================================
+#  Sensitivity Analysis — ESP32 hardware accelerator simulation
+# ================================================================
+
+# Tasks that use SHA/AES primitives in the 90s variant:
+#   SHA-512:      KG.1_seed_expansion (hash_g)
+#   AES-256-CTR:  KG.2_gen_matrix_A, KG.3_noise_s, KG.4_noise_e,
+#                 ENC.2_gen_matrix_AT, ENC.3_noise_r,
+#                 ENC.4_noise_e1, ENC.5_noise_e2
+# Decapsulation has ZERO SHA/AES calls at the IND-CPA level.
+
+SHA_TASKS = {"KG.1_seed_expansion"}
+AES_TASKS = {
+    "KG.2_gen_matrix_A", "KG.3_noise_s", "KG.4_noise_e",
+    "ENC.2_gen_matrix_AT", "ENC.3_noise_r",
+    "ENC.4_noise_e1", "ENC.5_noise_e2",
+}
+
+
+def scale_times(times, sha_factor, aes_factor):
+    """Return a new times dict with SHA/AES tasks scaled down."""
+    scaled = {}
+    for name, t in times.items():
+        if name in SHA_TASKS:
+            scaled[name] = t / sha_factor
+        elif name in AES_TASKS:
+            scaled[name] = t / aes_factor
+        else:
+            scaled[name] = t
+    return scaled
+
+
+def critical_path_length(dag):
+    """Compute the critical path length of a weighted DAG."""
+    n = len(dag)
+    est = [0.0] * n  # earliest start time
+    for task in dag:
+        tid = task["id"]
+        dep_finish = max((est[d] + dag[d]["weight"] for d in task["deps"]),
+                         default=0.0)
+        est[tid] = dep_finish
+    return max(est[tid] + dag[tid]["weight"] for tid in range(n))
+
+
+def critical_path_tasks(dag):
+    """Return the list of task names on the critical path."""
+    n = len(dag)
+
+    # Forward pass — earliest start/finish
+    est = [0.0] * n
+    eft = [0.0] * n
+    for task in dag:
+        tid = task["id"]
+        dep_finish = max((eft[d] for d in task["deps"]), default=0.0)
+        est[tid] = dep_finish
+        eft[tid] = dep_finish + task["weight"]
+
+    makespan = max(eft)
+
+    # Backward pass — latest start/finish
+    successors = defaultdict(list)
+    for task in dag:
+        for d in task["deps"]:
+            successors[d].append(task["id"])
+
+    lft = [makespan] * n
+    lst = [0.0] * n
+    for task in reversed(dag):
+        tid = task["id"]
+        if successors[tid]:
+            lft[tid] = min(lst[s] for s in successors[tid])
+        else:
+            lft[tid] = makespan
+        lst[tid] = lft[tid] - task["weight"]
+
+    # Critical tasks have zero slack
+    cp = []
+    for task in dag:
+        tid = task["id"]
+        slack = lst[tid] - est[tid]
+        if abs(slack) < 1e-9:
+            cp.append(task["name"])
+    return cp
+
+
+def run_sensitivity_analysis(times, results_dir, level):
+    """
+    Sensitivity analysis: how does the ESP32 hardware SHA/AES accelerator
+    affect scheduling?
+    
+    From Segatz et al. 2022:
+      SHA-256 speedup: 10.44x,  SHA-512: 6.1x,  AES: 9.65x
+    
+    Scenarios:
+      A — PC weights (baseline, no accelerator)
+      B — SHA tasks /6.1, AES tasks /9.65 (ESP32 HW accelerator)
+      C — SHA tasks /4, AES tasks /6 (conservative estimate)
+    """
+
+    scenarios = [
+        ("A: PC baseline (no HW accel)", 1.0, 1.0),
+        ("B: ESP32 HW accel (SHA/6.1, AES/9.65)", 6.1, 9.65),
+        ("C: Conservative (SHA/4, AES/6)", 4.0, 6.0),
+    ]
+
+    ops = [
+        ("keypair", KEYPAIR_DAG, SEGATZ_KEYPAIR),
+        ("encaps",  ENCAPS_DAG,  SEGATZ_ENCAPS),
+        ("decaps",  DECAPS_DAG,  SEGATZ_DECAPS),
+    ]
+
+    report = []
+    report.append("")
+    report.append("=" * 70)
+    report.append(f"  Sensitivity Analysis — Kyber-{level}")
+    report.append(f"  Effect of ESP32 SHA/AES hardware accelerator on scheduling")
+    report.append("=" * 70)
+    report.append("")
+    report.append("  SHA-accelerated tasks:  KG.1_seed_expansion (SHA-512)")
+    report.append("  AES-accelerated tasks:  KG.2_gen_matrix_A, KG.3_noise_s,")
+    report.append("    KG.4_noise_e, ENC.2_gen_matrix_AT, ENC.3_noise_r,")
+    report.append("    ENC.4_noise_e1, ENC.5_noise_e2")
+    report.append("  Unaffected: all NTT, arithmetic, serialization tasks")
+    report.append("  Unaffected: entire Decapsulation (zero SHA/AES calls)")
+    report.append("")
+
+    # Collect per-scenario results for comparison
+    all_results = {}  # scenario_label -> {op -> {cp_tasks, cp_len, ...}}
+
+    for scenario_label, sha_f, aes_f in scenarios:
+        report.append(f"  {'─' * 66}")
+        report.append(f"  {scenario_label}")
+        report.append(f"  {'─' * 66}")
+
+        scaled = scale_times(times, sha_f, aes_f)
+        scenario_data = {}
+
+        for op_name, dag_template, segatz_assign in ops:
+            dag = assign_weights(dag_template, scaled)
+            total_work = sum(t["weight"] for t in dag)
+            cp_len = critical_path_length(dag)
+            cp_tasks = critical_path_tasks(dag)
+            _, opt_ms = list_schedule(dag)
+            _, seg_ms = simulate_segatz(dag, segatz_assign)
+
+            scenario_data[op_name] = {
+                "total_work": total_work,
+                "cp_length": cp_len,
+                "cp_tasks": cp_tasks,
+                "optimal_ms": opt_ms,
+                "segatz_ms": seg_ms,
+            }
+
+            seg_speedup = total_work / seg_ms if seg_ms > 0 else 0
+            opt_speedup = total_work / opt_ms if opt_ms > 0 else 0
+            gap_pct = ((seg_ms - opt_ms) / opt_ms * 100) if opt_ms > 0 else 0
+
+            report.append(f"    {op_name.upper():<12s}  "
+                          f"work={total_work:>8.2f}  "
+                          f"CP={cp_len:>8.2f}  "
+                          f"Segatz={seg_ms:>8.2f}  "
+                          f"ListSched={opt_ms:>8.2f}  "
+                          f"gap={gap_pct:>5.1f}%  "
+                          f"speedup={opt_speedup:.2f}x")
+
+            # Show scaled weights for SHA/AES tasks
+            if sha_f > 1.0 or aes_f > 1.0:
+                changed = []
+                for t in dag:
+                    orig = times.get(t["name"], 0.0)
+                    if abs(t["weight"] - orig) > 0.01:
+                        changed.append(
+                            f"      {t['name']:<30s} "
+                            f"{orig:>8.2f} → {t['weight']:>8.2f} μs "
+                            f"(/{orig/t['weight']:.1f}x)")
+                if changed:
+                    report.append("      Scaled tasks:")
+                    report.extend(changed)
+
+        all_results[scenario_label] = scenario_data
+        report.append("")
+
+    # ── Cross-scenario comparison ──
+    report.append("=" * 70)
+    report.append("  CROSS-SCENARIO COMPARISON")
+    report.append("=" * 70)
+
+    scenario_labels = [s[0] for s in scenarios]
+    baseline_label = scenario_labels[0]
+
+    for op_name, _, _ in ops:
+        report.append(f"\n  {op_name.upper()}:")
+        baseline_cp = all_results[baseline_label][op_name]["cp_tasks"]
+
+        # Check if critical path changes
+        cp_changed = False
+        for label in scenario_labels[1:]:
+            other_cp = all_results[label][op_name]["cp_tasks"]
+            if other_cp != baseline_cp:
+                cp_changed = True
+                report.append(f"    ⚠ Critical path CHANGES under {label}:")
+                report.append(f"      Baseline: {' → '.join(baseline_cp)}")
+                report.append(f"      Changed:  {' → '.join(other_cp)}")
+
+        if not cp_changed:
+            report.append(f"    Critical path is INVARIANT across all scenarios:")
+            report.append(f"      {' → '.join(baseline_cp)}")
+
+        # Check if gap opens up
+        gaps = []
+        for label in scenario_labels:
+            d = all_results[label][op_name]
+            gap = ((d["segatz_ms"] - d["optimal_ms"]) / d["optimal_ms"] * 100
+                   if d["optimal_ms"] > 0 else 0)
+            gaps.append((label, gap, d["segatz_ms"], d["optimal_ms"]))
+
+        any_nonzero = any(abs(g[1]) > 0.05 for g in gaps)
+        if any_nonzero:
+            report.append(f"    ⚠ Segatz gap OPENS under accelerated scenarios:")
+            for label, gap, seg, opt in gaps:
+                marker = " ← GAP" if abs(gap) > 0.05 else ""
+                report.append(
+                    f"      {label}: "
+                    f"Segatz={seg:.2f} vs Optimal={opt:.2f} "
+                    f"(gap={gap:.1f}%){marker}")
+        else:
+            report.append(f"    Segatz remains optimal across all scenarios "
+                          f"(gap=0.0%)")
+
+        # Show speedup trend
+        report.append(f"    Speedup trend (List Sched 2-core vs single-core):")
+        for label in scenario_labels:
+            d = all_results[label][op_name]
+            sp = d["total_work"] / d["optimal_ms"] if d["optimal_ms"] > 0 else 0
+            report.append(f"      {label}: {sp:.2f}x")
+
+    report.append("")
+
+    report_text = "\n".join(report)
+    print(report_text)
+
+    txt_path = os.path.join(results_dir, "sensitivity_analysis.txt")
+    with open(txt_path, 'w', encoding='utf-8') as f:
+        f.write(report_text + "\n")
+    print(f"\n  Sensitivity analysis saved to: {txt_path}")
 
 
 if __name__ == "__main__":
