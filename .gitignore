@@ -1,0 +1,17 @@
+.vscode/
+build/
+sdkconfig
+sdkconfig.old
+
+# Simulation build artifacts
+sim/*.exe
+sim/**/*.exe
+sim/results/*.csv
+sim/results/*.json
+sim/results/*.txt
+sim/results/*.png
+!sim/results/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
