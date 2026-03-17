@@ -11,6 +11,8 @@ sim/results/*.json
 sim/results/*.txt
 sim/results/*.png
 !sim/results/.gitkeep
+README.md
+
 
 # Python
 __pycache__/
