@@ -335,13 +335,12 @@ Fig.~\ref{fig:gantt_scenariob} shows the same comparison under Scenario~B (hardw
 \label{fig:gantt_scenariob}
 \end{figure*}
 
-% Placeholder for DAG figure — to be provided
-% \begin{figure}[!t]
-% \centering
-% \includegraphics[width=\columnwidth]{../sim/results/dag_keygen.png}
-% \caption{Key generation DAG with critical path highlighted (bold edges). Tasks KG.1 through KG.9 with precedence edges and measured weights. The critical path KG.1 $\rightarrow$ KG.2 $\rightarrow$ KG.7 $\rightarrow$ KG.8 $\rightarrow$ KG.9 consumes 87.5\% of total work.}
-% \label{fig:dag_keygen}
-% \end{figure}
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{../sim/results/dag_combined.png}
+\caption{Task dependency DAGs for all three KEM operations (Kyber-512) with critical paths highlighted in red. Node colors indicate task type: orange = SHA, blue = AES-CTR, green = arithmetic/NTT. Node labels show task weight in $\mu$s. The critical path consumes 87.5\% of total work in key generation, 66.0\% in encapsulation, and 96.9\% in decapsulation, illustrating the scheduling saturation property.}
+\label{fig:dag_combined}
+\end{figure*}
 
 \subsection{FIPS 203 Gap Analysis}
 
