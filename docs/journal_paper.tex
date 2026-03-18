@@ -157,7 +157,14 @@ Each KEM operation was decomposed into the sub-tasks identified in~\cite{segatz2
 
 \subsection{DAG Construction}
 
-The task dependency graphs were constructed by mapping the computational flow diagrams presented in Figures~7, 8, and~9 of~\cite{segatz2022} to formal DAG representations. Each sub-task becomes a vertex with its measured average execution time as the weight. Directed edges encode data dependencies: for example, in key generation, the matrix-vector multiplication task KG.7 depends on both the matrix generation task KG.2 (producing $\hat{A}$) and the NTT of the secret vector task KG.5 (producing $\hat{s}$). The Segatz dual-core assignment was encoded as a separate data structure, exactly matching the partitioning shown in their paper.
+The task dependency graphs were constructed by mapping the computational flow diagrams presented in Figures~7, 8, and~9 of~\cite{segatz2022} to formal DAG representations. Each sub-task becomes a vertex with its measured average execution time as the weight. Directed edges encode data dependencies: for example, in key generation, the matrix-vector multiplication task KG.7 depends on both the matrix generation task KG.2 (producing $\hat{A}$) and the NTT of the secret vector task KG.5 (producing $\hat{s}$). The Segatz dual-core assignment was encoded as a separate data structure, exactly matching the partitioning shown in their paper. Fig.~\ref{fig:dag_combined} shows the resulting DAGs for all three operations with critical paths highlighted.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{../sim/results/dag_combined.png}
+\caption{Task dependency DAGs for all three KEM operations (Kyber-512) with critical paths highlighted in red. Node colors indicate task type: orange = SHA, blue = AES-CTR, green = arithmetic/NTT. Node labels show task weight in $\mu$s. The critical path consumes 87.5\% of total work in key generation, 66.0\% in encapsulation, and 96.9\% in decapsulation, illustrating the scheduling saturation property.}
+\label{fig:dag_combined}
+\end{figure*}
 
 \subsection{Sensitivity Analysis Model}
 \label{sec:sensitivity_model}
@@ -323,7 +330,7 @@ Fig.~\ref{fig:gantt_baseline} presents Gantt chart comparisons of the Segatz and
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth]{../sim/results/optimal_schedule.png}
-\caption{Gantt chart comparison: Segatz schedule (left) vs.\ HLFET-optimal schedule (right) under Scenario~A (PC baseline) for all three KEM operations. Both schedules achieve identical makespans, confirming the 0.0\% gap under software-only timing.}
+\caption{Gantt chart comparison: Segatz schedule (left) vs.\ HLFET-optimal schedule (right) for all three KEM operations (Scenario~A: software-only timing, no hardware acceleration). Both schedules achieve identical makespans, confirming the 0.0\% gap.}
 \label{fig:gantt_baseline}
 \end{figure*}
 
@@ -336,12 +343,7 @@ Fig.~\ref{fig:gantt_scenariob} shows the same comparison under Scenario~B (hardw
 \label{fig:gantt_scenariob}
 \end{figure*}
 
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=\textwidth]{../sim/results/dag_combined.png}
-\caption{Task dependency DAGs for all three KEM operations (Kyber-512) with critical paths highlighted in red. Node colors indicate task type: orange = SHA, blue = AES-CTR, green = arithmetic/NTT. Node labels show task weight in $\mu$s. The critical path consumes 87.5\% of total work in key generation, 66.0\% in encapsulation, and 96.9\% in decapsulation, illustrating the scheduling saturation property.}
-\label{fig:dag_combined}
-\end{figure*}
+
 
 \subsection{FIPS 203 Gap Analysis}
 
