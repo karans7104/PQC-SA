@@ -11,9 +11,27 @@ sim/results/*.json
 sim/results/*.txt
 sim/results/*.png
 !sim/results/.gitkeep
-README.md
-
 
 # Python
 __pycache__/
 *.pyc
+
+# AI / agent tool artifacts (never commit these)
+.gemini/
+.cursor/
+.copilot/
+.aider*
+.agent/
+.agents/
+_agent/
+_agents/
+AGENTS.md
+.github/copilot*
+bare_jrnl.tex
+
+# Working docs / agent handoff (not for publication)
+docs/agent_prompt_template.md
+docs/context_injection.md
+docs/next_agent_startup.md
+docs/repo_work_report.md
+docs/figures_list.md
