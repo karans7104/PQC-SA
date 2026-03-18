@@ -34,7 +34,7 @@ The model makes a falsifiable prediction: encapsulation performance on ESP32 har
 
 ## Contribution 2: FIPS 203 Compliance Audit
 
-We conducted what we believe to be the first systematic compliance audit of an ESP32 Kyber implementation against the finalized FIPS 203 standard. The audit compared every function in the source code against the corresponding FIPS 203 algorithm, producing a gap taxonomy with severity classification and algorithm-level citations.
+We present the first systematic compliance audit of an ESP32 Kyber implementation against the finalized FIPS 203 standard — no prior work could have conducted this audit, as FIPS 203 was published in August 2024. The audit compared every function in the source code against the corresponding FIPS 203 algorithm, producing a gap taxonomy with severity classification and algorithm-level citations.
 
 **Findings:** 9 gaps total — 3 Critical, 3 Moderate, 2 Minor, 1 Informational. The three critical gaps all affect shared secret computation:
 
