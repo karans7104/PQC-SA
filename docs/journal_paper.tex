@@ -13,7 +13,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 
-\hyphenation{CRYSTALS-Kyber ESP32 ML-KEM post-quantum}
+%\hyphenation{CRYSTALS-Kyber ESP32 ML-KEM post-quantum}
 
 \begin{document}
 
@@ -161,7 +161,7 @@ The task dependency graphs were constructed by mapping the computational flow di
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=\textwidth]{../sim/results/dag_combined.png}
+\includegraphics[width=\textwidth]{dag_combined.png}
 \caption{Task dependency DAGs for all three KEM operations (Kyber-512) with critical paths highlighted in red. Node colors indicate task type: orange = SHA, blue = AES-CTR, green = arithmetic/NTT. Node labels show task weight in $\mu$s. The critical path consumes 87.5\% of total work in key generation, 66.0\% in encapsulation, and 96.9\% in decapsulation, illustrating the scheduling saturation property.}
 \label{fig:dag_combined}
 \end{figure*}
@@ -318,7 +318,7 @@ Fig.~\ref{fig:sensitivity} visualizes the scheduling gap across all three scenar
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{../sim/results/sensitivity_plot.png}
+\includegraphics[width=\columnwidth]{sensitivity_plot.png}
 \caption{Scheduling gap between Segatz and HLFET-optimal schedules across three hardware acceleration scenarios for Kyber-512. The gap increases monotonically with acceleration strength, reaching 6.7\% for encapsulation under ESP32 hardware acceleration.}
 \label{fig:sensitivity}
 \end{figure}
@@ -329,7 +329,7 @@ Fig.~\ref{fig:gantt_baseline} presents Gantt chart comparisons of the Segatz and
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=\textwidth]{../sim/results/optimal_schedule.png}
+\includegraphics[width=\textwidth]{optimal_schedule.png}
 \caption{Gantt chart comparison: Segatz schedule (left) vs.\ HLFET-optimal schedule (right) for all three KEM operations (Scenario~A: software-only timing, no hardware acceleration). Both schedules achieve identical makespans, confirming the 0.0\% gap.}
 \label{fig:gantt_baseline}
 \end{figure*}
@@ -338,7 +338,7 @@ Fig.~\ref{fig:gantt_scenariob} shows the same comparison under Scenario~B (hardw
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=\textwidth]{../sim/results/scenario_b_gantt.png}
+\includegraphics[width=\textwidth]{scenario_b_gantt.png}
 \caption{Gantt chart comparison under Scenario~B (ESP32 HW acceleration: SHA/$6.1\times$, AES/$9.65\times$). Task colors indicate type: orange = SHA (accelerated), blue = AES (accelerated), green = arithmetic/NTT. The encapsulation panel shows the 6.7\% gap arising from suboptimal task placement in the Segatz schedule.}
 \label{fig:gantt_scenariob}
 \end{figure*}
@@ -572,16 +572,16 @@ T.~Takagi, \emph{Post-Quantum Cryptography}, Lecture Notes in Computer Science, 
 % ====================================================================
 %  BIOGRAPHIES
 % ====================================================================
-\begin{IEEEbiographynophoto}{Karan Sonawane}
-(2023KUCP1153) is a B.Tech student in Computer Science and Engineering at the Indian Institute of Information Technology Kota, Rajasthan, India. His research interests include post-quantum cryptography, embedded systems security, and parallel computing on resource-constrained platforms.
-\end{IEEEbiographynophoto}
+%\begin{IEEEbiographynophoto}{Karan Sonawane}
+%(2023KUCP1153) is a B.Tech student in Computer Science and Engineering at the Indian Institute of %Information Technology Kota, Rajasthan, India. His research interests include post-quantum %cryptography, embedded systems security, and parallel computing on resource-constrained platforms.
+%\end{IEEEbiographynophoto}
 
-\begin{IEEEbiographynophoto}{Achyut Gupta}
-(2023KUCP1158) is a B.Tech student in Computer Science and Engineering at the Indian Institute of Information Technology Kota, Rajasthan, India. His research interests include cryptographic protocol analysis and IoT security.
-\end{IEEEbiographynophoto}
+%\begin{IEEEbiographynophoto}{Achyut Gupta}
+%(2023KUCP1158) is a B.Tech student in Computer Science and Engineering at the Indian Institute of %Information Technology Kota, Rajasthan, India. His research interests include cryptographic %protocol analysis and IoT security.
+%\end{IEEEbiographynophoto}
 
-\begin{IEEEbiographynophoto}{Bhavesh}
-(2023KUCP1159) is a B.Tech student in Computer Science and Engineering at the Indian Institute of Information Technology Kota, Rajasthan, India. His research interests include formal methods and embedded systems.
-\end{IEEEbiographynophoto}
+%\begin{IEEEbiographynophoto}{Bhavesh}
+%(2023KUCP1159) is a B.Tech student in Computer Science and Engineering at the Indian Institute of %Information Technology Kota, Rajasthan, India. His research interests include formal methods and %embedded systems.
+%\end{IEEEbiographynophoto}
 
 \end{document}
