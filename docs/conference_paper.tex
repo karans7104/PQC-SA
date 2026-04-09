@@ -13,6 +13,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{placeins}
 
 \begin{document}
 
@@ -50,12 +51,14 @@ We present a formal scheduling-theoretic analysis of the dual-core CRYSTALS-Kybe
 CRYSTALS-Kyber, ML-KEM, post-quantum cryptography, ESP32, DAG scheduling, critical path method, HLFET, FIPS~203, embedded systems.
 \end{IEEEkeywords}
 
+\IEEEpeerreviewmaketitle
+
 % ====================================================================
 %  I. INTRODUCTION
 % ====================================================================
 \section{Introduction}
 
-The selection of CRYSTALS-Kyber as NIST's primary post-quantum key encapsulation mechanism~\cite{kyber2021} has motivated implementation efforts on resource-constrained IoT platforms. Segatz and Al~Hafiz~\cite{segatz2022} addressed this by implementing Kyber on the ESP32's dual-core Xtensa LX6 architecture, exploiting task-level parallelism with empirically derived core assignments. Prior embedded PQC work includes Kyber on ARM Cortex-M4~\cite{botros2019}, Saber on ESP32~\cite{wang2020}, and post-quantum TLS integration on ESP32~\cite{buerstinghaus2020}.
+The impending threat of quantum computers to classical public-key cryptography~\cite{shor1999} has driven NIST to standardize post-quantum algorithms. The selection of CRYSTALS-Kyber as the primary key encapsulation mechanism~\cite{kyber2021, nist2022announce} has motivated implementation efforts on resource-constrained IoT platforms. Segatz and Al~Hafiz~\cite{segatz2022} addressed this by implementing Kyber on the ESP32's dual-core Xtensa LX6 architecture, exploiting task-level parallelism with empirically derived core assignments. Prior embedded PQC work includes Kyber on ARM Cortex-M4~\cite{botros2019}, Saber on ESP32~\cite{wang2020}, and post-quantum TLS integration on ESP32~\cite{buerstinghaus2020}.
 
 Two questions remained open. First, while the Segatz dual-core schedule was empirically effective, it was not formally analyzed against scheduling-theoretic bounds. The three KEM operations decompose naturally into precedence-constrained DAGs, enabling rigorous optimality analysis via established results~\cite{graham1969, kwok1999}. Second, the Kyber specification underwent substantial changes between its 2022 selection and its August 2024 publication as FIPS~203 (ML-KEM)~\cite{fips203}, and the 90s variant used by the implementation was excluded from standardization.
 
@@ -125,28 +128,28 @@ Table~\ref{tab:profiling} presents the compressed profiling results. In key gene
 \caption{Task Execution Times for Kyber-512 (Dominant Tasks)}
 \label{tab:profiling}
 \centering
-\begin{tabular}{l l r r}
+\begin{tabular}{p{3.8cm} l r r}
 \toprule
-\textbf{Task} & \textbf{Op.} & \textbf{Avg ($\mu$s)} & \textbf{\%} \\
+\textbf{Task} & \textbf{Op.} & \textbf{$\mu$s} & \textbf{\%} \\
 \midrule
-KG.1 Seed expansion (SHA) & KG & 249.58 & 64.9 \\
-KG.2 Gen matrix $A$ (AES) & KG & 76.03 & 19.8 \\
-KG.3 Noise $\mathbf{s}$ (AES) & KG & 18.30 & 4.8 \\
-KG.4 Noise $\mathbf{e}$ (AES) & KG & 18.66 & 4.8 \\
-KG.5 NTT($\mathbf{s}$) & KG & 5.66 & 1.5 \\
-KG.6 NTT($\mathbf{e}$) & KG & 5.36 & 1.4 \\
-KG.7 Matmul $A \hat{s}$ & KG & 8.76 & 2.3 \\
+KG.1 Seed exp.\ (SHA) & KG & 249.58 & 64.9 \\
+KG.2 Gen.\ matrix (AES) & KG & 76.03 & 19.8 \\
+KG.3 Noise $s$ (AES) & KG & 18.30 & 4.8 \\
+KG.4 Noise $e$ (AES) & KG & 18.66 & 4.8 \\
+KG.5 NTT($s$) & KG & 5.66 & 1.5 \\
+KG.6 NTT($e$) & KG & 5.36 & 1.4 \\
+KG.7 Matmul $A\hat{s}$ & KG & 8.76 & 2.3 \\
 KG.8--9 Add/pack & KG & 2.49 & 0.6 \\
 \midrule
 ENC.1 Unpack $pk$ & Enc & 1.06 & 0.7 \\
-ENC.2 Gen matrix $A^T$ (AES) & Enc & 74.38 & 48.5 \\
+ENC.2 Gen.\ matrix (AES) & Enc & 74.38 & 48.5 \\
 ENC.3--5 Noise (AES) & Enc & 42.38 & 27.6 \\
-ENC.6 NTT($\mathbf{r}$) & Enc & 5.65 & 3.7 \\
+ENC.6 NTT($r$) & Enc & 5.65 & 3.7 \\
 ENC.7--8 Matmul/inner & Enc & 12.43 & 8.1 \\
-ENC.9 Inverse NTT & Enc & 13.14 & 8.6 \\
+ENC.9 Inv.\ NTT & Enc & 13.14 & 8.6 \\
 ENC.10--11 Add/compress & Enc & 4.40 & 2.9 \\
 \midrule
-DEC.1--7 (all arithmetic) & Dec & 18.32 & 100 \\
+DEC.1--7 (all arith.) & Dec & 18.32 & 100 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -162,7 +165,7 @@ Table~\ref{tab:critical_path} summarizes the critical path analysis. Key generat
 \centering
 \begin{tabular}{l r r r r}
 \toprule
-\textbf{Op.} & \textbf{Work} & \textbf{CP} & \textbf{CP/W} & \textbf{Max $S_p$} \\
+\textbf{Op.} & \textbf{Work ($\mu$s)} & \textbf{CP ($\mu$s)} & \textbf{CP/W} & \textbf{Max $S_p$} \\
 \midrule
 KeyGen & 384.83 & 336.86 & 87.5\% & 1.14$\times$ \\
 Encaps & 153.43 & 101.29 & 66.0\% & 1.51$\times$ \\
@@ -212,7 +215,8 @@ The mechanism is clear: hardware acceleration disproportionately shrinks SHA/AES
 
 The compliance audit identified nine gaps, summarized in Table~\ref{tab:fips_gaps}. The three critical gaps all affect shared secret computation: GAP-1 omits domain separation ($G(d)$ instead of $G(d \| k)$), GAP-2 retains a removed pre-hash, and GAP-3 uses $\mathrm{KDF}(K' \| H(c))$ instead of direct $K$. Divergence testing confirmed 20/20 output divergence between the original and partially corrected versions across all three parameter sets ($k = 2, 3, 4$), with both versions independently passing round-trip consistency.
 
-\begin{table}[!t]
+\FloatBarrier
+\begin{table}[!htbp]
 \renewcommand{\arraystretch}{1.1}
 \caption{FIPS 203 Compliance Gaps}
 \label{tab:fips_gaps}
