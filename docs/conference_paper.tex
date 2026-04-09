@@ -14,7 +14,6 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{placeins}
-\usepackage{float}
 
 \begin{document}
 
@@ -175,10 +174,7 @@ Decaps &  18.32 &  17.75 & 96.9\% & 1.03$\times$ \\
 \end{tabular}
 \end{table}
 
-\subsection{Scheduling Comparison}
-
-Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Segatz schedule achieves 0.0\% gap for all operations---a structural consequence of scheduling saturation, not a property of the Segatz assignment in particular. For these small DAGs (7--11 nodes, 2 processors), the HLFET solution was verified to be globally optimal via exhaustive enumeration of all valid schedules. Under Scenario~B, the gap opens to 6.7\% for encapsulation (36.96 vs.\ 34.62~$\mu$s) and 2.7\% for key generation.
-
+% Table III placed here in source so LaTeX queues it before Table IV
 \begin{table*}[!t]
 \renewcommand{\arraystretch}{1.1}
 \caption{Scheduling Comparison: Segatz vs.\ HLFET Optimal Across Three Acceleration Scenarios (Kyber-512)}
@@ -203,6 +199,10 @@ Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Se
 \end{tabular}
 \end{table*}
 
+\subsection{Scheduling Comparison}
+
+Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Segatz schedule achieves 0.0\% gap for all operations---a structural consequence of scheduling saturation, not a property of the Segatz assignment in particular. For these small DAGs (7--11 nodes, 2 processors), the HLFET solution was verified to be globally optimal via exhaustive enumeration of all valid schedules. Under Scenario~B, the gap opens to 6.7\% for encapsulation (36.96 vs.\ 34.62~$\mu$s) and 2.7\% for key generation.
+
 The mechanism is clear: hardware acceleration disproportionately shrinks SHA/AES tasks that dominate the critical path, making arithmetic tasks relatively more significant. With more balanced weights, the Segatz assignment is no longer optimal. Fig.~\ref{fig:gantt_scenariob} visualizes this gap for the encapsulation operation.
 
 \begin{figure*}[!t]
@@ -216,7 +216,7 @@ The mechanism is clear: hardware acceleration disproportionately shrinks SHA/AES
 
 The compliance audit identified nine gaps, summarized in Table~\ref{tab:fips_gaps}. The three critical gaps all affect shared secret computation: GAP-1 omits domain separation ($G(d)$ instead of $G(d \| k)$), GAP-2 retains a removed pre-hash, and GAP-3 uses $\mathrm{KDF}(K' \| H(c))$ instead of direct $K$. Divergence testing confirmed 20/20 output divergence between the original and partially corrected versions across all three parameter sets ($k = 2, 3, 4$), with both versions independently passing round-trip consistency.
 
-\begin{table}[H]
+\begin{table}[!t]
 \renewcommand{\arraystretch}{1.1}
 \caption{FIPS 203 Compliance Gaps}
 \label{tab:fips_gaps}
