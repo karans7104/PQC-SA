@@ -14,6 +14,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{placeins}
+\usepackage{float}
 
 \begin{document}
 
@@ -215,8 +216,7 @@ The mechanism is clear: hardware acceleration disproportionately shrinks SHA/AES
 
 The compliance audit identified nine gaps, summarized in Table~\ref{tab:fips_gaps}. The three critical gaps all affect shared secret computation: GAP-1 omits domain separation ($G(d)$ instead of $G(d \| k)$), GAP-2 retains a removed pre-hash, and GAP-3 uses $\mathrm{KDF}(K' \| H(c))$ instead of direct $K$. Divergence testing confirmed 20/20 output divergence between the original and partially corrected versions across all three parameter sets ($k = 2, 3, 4$), with both versions independently passing round-trip consistency.
 
-\FloatBarrier
-\begin{table}[!htbp]
+\begin{table}[H]
 \renewcommand{\arraystretch}{1.1}
 \caption{FIPS 203 Compliance Gaps}
 \label{tab:fips_gaps}
