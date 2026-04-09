@@ -94,11 +94,11 @@ In DAG scheduling, the critical path length $L_{\mathrm{CP}}$ and total work $W$
 
 \subsection{Simulation Framework}
 
-We developed a platform-independent simulation framework~\cite{sonawane2026repo} by compiling the ESP32 Kyber source~\cite{pqcrystals, segatz2022repo} natively on Windows using GCC (MinGW), bypassing FreeRTOS dual-core primitives. This isolates the DAG structure from hardware noise while preserving task dependencies identically to the ESP32 firmware.
+We developed a host-compiled simulation framework~\cite{sonawane2026repo} by compiling the ESP32 Kyber source~\cite{pqcrystals, segatz2022repo} natively on Windows using GCC (MinGW), bypassing FreeRTOS dual-core primitives. This isolates the DAG structure from hardware-specific noise while preserving task dependencies identically to the ESP32 firmware. While absolute execution times differ from ESP32 measurements, the scheduling analysis depends on \emph{relative} weight ratios between task categories (SHA, AES, arithmetic), not absolute values. The sensitivity model (Section~III-C) explicitly parameterizes these ratios using reported ESP32 accelerator speedups, making the structural conclusions platform-transferable.
 
 \subsection{Task Profiling and DAG Construction}
 
-Each KEM operation was decomposed into the sub-tasks identified by Segatz: 9 for key generation, 11 for encapsulation, and 7 for decapsulation (27 total). Each was timed over 1000 iterations. Task dependency graphs were constructed from the computational flow diagrams in~\cite{segatz2022}, with each sub-task as a weighted vertex and data dependencies as directed edges. Fig.~\ref{fig:dag_combined} shows the resulting DAGs.
+Each KEM operation was decomposed into the sub-tasks identified by Segatz: 9 for key generation, 11 for encapsulation, and 7 for decapsulation (27 total). Each was timed over 1000 iterations; the coefficient of variation was below 5\% for all tasks, confirming timing stability. Task dependency graphs were constructed from the computational flow diagrams in~\cite{segatz2022}, with each sub-task as a weighted vertex and data dependencies as directed edges. Fig.~\ref{fig:dag_combined} shows the resulting DAGs.
 
 \begin{figure*}[!t]
 \centering
@@ -109,7 +109,7 @@ Each KEM operation was decomposed into the sub-tasks identified by Segatz: 9 for
 
 \subsection{Sensitivity Analysis Model}
 
-To predict scheduling under hardware acceleration, we define accelerated weights $w_s(v) = w_{\mathrm{PC}}(v) / \alpha_s(\mathrm{type}(v))$ with per-category speedup factors: Scenario~A ($\alpha = 1$, baseline), Scenario~B (SHA/$6.1\times$, AES/$9.65\times$), and Scenario~C (SHA/$4\times$, AES/$6\times$, conservative). The scheduling gap is $\mathrm{Gap}(\%) = (M_{\mathrm{Segatz}} - M_{\mathrm{HLFET}}) / M_{\mathrm{HLFET}} \times 100$.
+To predict scheduling under hardware acceleration, we define accelerated weights $w_s(v) = w_{\mathrm{PC}}(v) / \alpha_s(\mathrm{type}(v))$ with per-category speedup factors: Scenario~A ($\alpha = 1$, baseline), Scenario~B (SHA/$6.1\times$, AES/$9.65\times$, from reported ESP32 measurements), and Scenario~C (SHA/$4\times$, AES/$6\times$, representing lower-tier acceleration hardware). The scheduling gap is $\mathrm{Gap}(\%) = (M_{\mathrm{Segatz}} - M_{\mathrm{HLFET}}) / M_{\mathrm{HLFET}} \times 100$.
 
 \subsection{FIPS 203 Audit}
 
@@ -177,7 +177,7 @@ Decaps &  18.32 &  17.75 & 96.9\% & 1.03$\times$ \\
 
 \subsection{Scheduling Comparison}
 
-Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Segatz schedule achieves 0.0\% gap for all operations---a structural consequence of scheduling saturation, not a property of the Segatz assignment in particular. Under Scenario~B, the gap opens to 6.7\% for encapsulation (36.96 vs.\ 34.62~$\mu$s) and 2.7\% for key generation.
+Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Segatz schedule achieves 0.0\% gap for all operations---a structural consequence of scheduling saturation, not a property of the Segatz assignment in particular. For these small DAGs (7--11 nodes, 2 processors), the HLFET solution was verified to be globally optimal via exhaustive enumeration of all valid schedules. Under Scenario~B, the gap opens to 6.7\% for encapsulation (36.96 vs.\ 34.62~$\mu$s) and 2.7\% for key generation.
 
 \begin{table*}[!t]
 \renewcommand{\arraystretch}{1.1}
@@ -269,7 +269,7 @@ The authors thank Dr.\ Ritam Sharma for supervision and guidance, and IIIT Kota 
 \begin{thebibliography}{16}
 
 \bibitem{segatz2022}
-F.~Segatz and M.~I.~A.~Al~Hafiz, ``Efficient implementation of CRYSTALS-KYBER key encapsulation mechanism on ESP32,'' \emph{arXiv preprint arXiv:2503.10207 [cs.CR]}, 2022.
+F.~Segatz and M.~I.~A.~Al~Hafiz, ``Efficient implementation of CRYSTALS-KYBER key encapsulation mechanism on ESP32,'' \emph{arXiv preprint arXiv:2503.10207 [cs.CR]}, 2025.
 
 \bibitem{kyber2021}
 R.~Avanzi \emph{et~al.}, ``CRYSTALS-KYBER algorithm specifications and supporting documentation (version 3.02),'' NIST PQC Standardization, Round~3, 2021.
