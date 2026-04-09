@@ -1,0 +1,317 @@
+%% conference_paper.tex
+%% IEEE Conference Paper — CRYSTALS-Kyber Scheduling Analysis on ESP32
+%% Compressed from journal_paper.tex for 5–6 page conference format
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+
+\begin{document}
+
+\title{Formal Scheduling Analysis of CRYSTALS-Kyber on Dual-Core ESP32: A DAG-Based Optimality Study
+\thanks{The simulation framework, scheduling analysis code, and FIPS~203 gap analysis are available at \url{https://github.com/karans7104/PQC-SA}.}
+}
+
+\author{
+\IEEEauthorblockN{Karan Sonawane}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Science \& Eng.} \\
+\textit{IIIT Kota}, Rajasthan, India \\
+2023KUCP1153}
+\and
+\IEEEauthorblockN{Achyut Gupta}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Science \& Eng.} \\
+\textit{IIIT Kota}, Rajasthan, India \\
+2023KUCP1158}
+\and
+\IEEEauthorblockN{Bhavesh}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Science \& Eng.} \\
+\textit{IIIT Kota}, Rajasthan, India \\
+2023KUCP1159}
+}
+
+\maketitle
+
+% ====================================================================
+%  ABSTRACT
+% ====================================================================
+\begin{abstract}
+We present a formal scheduling-theoretic analysis of the dual-core CRYSTALS-Kyber implementation on the ESP32 microcontroller by Segatz and Al~Hafiz. The three KEM operations are modeled as precedence-constrained directed acyclic graphs (DAGs), and the empirical task assignment is compared against the HLFET list scheduling optimum. Under software-only timing, the schedule achieves a 0.0\% gap---formally attributed to \emph{scheduling saturation}, where the critical path consumes over 85\% of total work. A parameterized sensitivity analysis modeling ESP32 hardware accelerators (SHA/$6.1\times$, AES/$9.65\times$) reveals that acceleration breaks this optimality: the gap opens to 6.7\% for encapsulation and 2.7\% for key generation. Concurrently, a FIPS~203 compliance audit identifies nine deviations, including three critical algorithmic differences preventing interoperation with any conforming ML-KEM implementation, validated through 20/20 divergence testing across all parameter sets.
+\end{abstract}
+
+\begin{IEEEkeywords}
+CRYSTALS-Kyber, ML-KEM, post-quantum cryptography, ESP32, DAG scheduling, critical path method, HLFET, FIPS~203, embedded systems.
+\end{IEEEkeywords}
+
+% ====================================================================
+%  I. INTRODUCTION
+% ====================================================================
+\section{Introduction}
+
+The selection of CRYSTALS-Kyber as NIST's primary post-quantum key encapsulation mechanism~\cite{kyber2021} has motivated implementation efforts on resource-constrained IoT platforms. Segatz and Al~Hafiz~\cite{segatz2022} addressed this by implementing Kyber on the ESP32's dual-core Xtensa LX6 architecture, exploiting task-level parallelism with empirically derived core assignments. Prior embedded PQC work includes Kyber on ARM Cortex-M4~\cite{botros2019}, Saber on ESP32~\cite{wang2020}, and post-quantum TLS integration on ESP32~\cite{buerstinghaus2020}.
+
+Two questions remained open. First, while the Segatz dual-core schedule was empirically effective, it was not formally analyzed against scheduling-theoretic bounds. The three KEM operations decompose naturally into precedence-constrained DAGs, enabling rigorous optimality analysis via established results~\cite{graham1969, kwok1999}. Second, the Kyber specification underwent substantial changes between its 2022 selection and its August 2024 publication as FIPS~203 (ML-KEM)~\cite{fips203}, and the 90s variant used by the implementation was excluded from standardization.
+
+This paper makes the following contributions:
+\begin{itemize}
+\item A formal DAG scheduling analysis identifying \emph{scheduling saturation}---the structural condition under which the empirical schedule is provably optimal.
+\item A parameterized sensitivity model predicting a 6.7\% scheduling gap for encapsulation under ESP32 hardware acceleration.
+\item A systematic FIPS~203 compliance audit identifying nine gaps with severity classification, producing a reusable gap taxonomy.
+\end{itemize}
+
+% ====================================================================
+%  II. BACKGROUND
+% ====================================================================
+\section{Background}
+
+\subsection{CRYSTALS-Kyber}
+
+CRYSTALS-Kyber is a lattice-based KEM operating over $R_q = \mathbb{Z}_q[X]/(X^{256}+1)$ with $q = 3329$, secured by the hardness of the Module-LWE problem~\cite{kyber2021}. It provides key generation, encapsulation, and decapsulation, with IND-CCA2 security via the Fujisaki--Okamoto transform. The 90s variant substitutes SHA-2 and AES-256-CTR for SHA-3/SHAKE. Following standardization, the algorithm was published as FIPS~203~\cite{fips203}.
+
+\subsection{ESP32 Platform}
+
+The ESP32 features two Xtensa LX6 cores at 240~MHz with hardware accelerators for SHA ($6.1\times$ speedup) and AES ($9.65\times$ speedup)~\cite{esp32trm, segatz2022}. Segatz and Al~Hafiz decomposed each KEM operation into sub-tasks distributed across cores using FreeRTOS semaphores.
+
+\subsection{DAG Scheduling}
+
+In DAG scheduling, the critical path length $L_{\mathrm{CP}}$ and total work $W$ provide lower bounds on makespan: $M^{*} \geq \max(L_{\mathrm{CP}},\, W/P)$~\cite{graham1969}. The HLFET heuristic~\cite{kwok1999, adam1974} assigns priorities by bottom-level and is optimal for two-processor unit-weight trees~\cite{coffman1972}.
+
+% ====================================================================
+%  III. METHODOLOGY
+% ====================================================================
+\section{Methodology}
+
+\subsection{Simulation Framework}
+
+We developed a platform-independent simulation framework~\cite{sonawane2026repo} by compiling the ESP32 Kyber source~\cite{pqcrystals, segatz2022repo} natively on Windows using GCC (MinGW), bypassing FreeRTOS dual-core primitives. This isolates the DAG structure from hardware noise while preserving task dependencies identically to the ESP32 firmware.
+
+\subsection{Task Profiling and DAG Construction}
+
+Each KEM operation was decomposed into the sub-tasks identified by Segatz: 9 for key generation, 11 for encapsulation, and 7 for decapsulation (27 total). Each was timed over 1000 iterations. Task dependency graphs were constructed from the computational flow diagrams in~\cite{segatz2022}, with each sub-task as a weighted vertex and data dependencies as directed edges. Fig.~\ref{fig:dag_combined} shows the resulting DAGs.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{dag_combined.png}
+\caption{Task dependency DAGs for all three KEM operations (Kyber-512) with critical paths highlighted in red. Node colors: orange = SHA, blue = AES-CTR, green = arithmetic/NTT. Node labels show task weight in $\mu$s.}
+\label{fig:dag_combined}
+\end{figure*}
+
+\subsection{Sensitivity Analysis Model}
+
+To predict scheduling under hardware acceleration, we define accelerated weights $w_s(v) = w_{\mathrm{PC}}(v) / \alpha_s(\mathrm{type}(v))$ with per-category speedup factors: Scenario~A ($\alpha = 1$, baseline), Scenario~B (SHA/$6.1\times$, AES/$9.65\times$), and Scenario~C (SHA/$4\times$, AES/$6\times$, conservative). The scheduling gap is $\mathrm{Gap}(\%) = (M_{\mathrm{Segatz}} - M_{\mathrm{HLFET}}) / M_{\mathrm{HLFET}} \times 100$.
+
+\subsection{FIPS 203 Audit}
+
+Each function was compared against the corresponding FIPS~203 algorithm~\cite{fips203}. Deviations were classified by severity and mapped to specific algorithm steps. Partial fixes were implemented in a separate directory, and divergence was validated through KAT testing.
+
+% ====================================================================
+%  IV. RESULTS
+% ====================================================================
+\section{Results}
+
+\subsection{Task Profiling}
+
+Table~\ref{tab:profiling} presents the compressed profiling results. In key generation, KG.1 (seed expansion) accounts for 64.9\% of total work; in encapsulation, ENC.2 (matrix generation) accounts for 48.5\%. Decapsulation contains no SHA/AES tasks and totals only 18.32~$\mu$s.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.1}
+\caption{Task Execution Times for Kyber-512 (Dominant Tasks)}
+\label{tab:profiling}
+\centering
+\begin{tabular}{l l r r}
+\toprule
+\textbf{Task} & \textbf{Op.} & \textbf{Avg ($\mu$s)} & \textbf{\%} \\
+\midrule
+KG.1 Seed expansion (SHA) & KG & 249.58 & 64.9 \\
+KG.2 Gen matrix $A$ (AES) & KG & 76.03 & 19.8 \\
+KG.3 Noise $\mathbf{s}$ (AES) & KG & 18.30 & 4.8 \\
+KG.4 Noise $\mathbf{e}$ (AES) & KG & 18.66 & 4.8 \\
+KG.5 NTT($\mathbf{s}$) & KG & 5.66 & 1.5 \\
+KG.6 NTT($\mathbf{e}$) & KG & 5.36 & 1.4 \\
+KG.7 Matmul $A \hat{s}$ & KG & 8.76 & 2.3 \\
+KG.8--9 Add/pack & KG & 2.49 & 0.6 \\
+\midrule
+ENC.1 Unpack $pk$ & Enc & 1.06 & 0.7 \\
+ENC.2 Gen matrix $A^T$ (AES) & Enc & 74.38 & 48.5 \\
+ENC.3--5 Noise (AES) & Enc & 42.38 & 27.6 \\
+ENC.6 NTT($\mathbf{r}$) & Enc & 5.65 & 3.7 \\
+ENC.7--8 Matmul/inner & Enc & 12.43 & 8.1 \\
+ENC.9 Inverse NTT & Enc & 13.14 & 8.6 \\
+ENC.10--11 Add/compress & Enc & 4.40 & 2.9 \\
+\midrule
+DEC.1--7 (all arithmetic) & Dec & 18.32 & 100 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Critical Path Analysis}
+
+Table~\ref{tab:critical_path} summarizes the critical path analysis. Key generation and decapsulation exhibit CP/Work ratios exceeding 85\%, indicating \emph{scheduling saturation}: any valid schedule placing the critical path on one core is optimal.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.1}
+\caption{Critical Path Analysis for Kyber-512}
+\label{tab:critical_path}
+\centering
+\begin{tabular}{l r r r r}
+\toprule
+\textbf{Op.} & \textbf{Work} & \textbf{CP} & \textbf{CP/W} & \textbf{Max $S_p$} \\
+\midrule
+KeyGen & 384.83 & 336.86 & 87.5\% & 1.14$\times$ \\
+Encaps & 153.43 & 101.29 & 66.0\% & 1.51$\times$ \\
+Decaps &  18.32 &  17.75 & 96.9\% & 1.03$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Scheduling Comparison}
+
+Table~\ref{tab:scheduling} presents the central result. Under Scenario~A, the Segatz schedule achieves 0.0\% gap for all operations---a structural consequence of scheduling saturation, not a property of the Segatz assignment in particular. Under Scenario~B, the gap opens to 6.7\% for encapsulation (36.96 vs.\ 34.62~$\mu$s) and 2.7\% for key generation.
+
+\begin{table*}[!t]
+\renewcommand{\arraystretch}{1.1}
+\caption{Scheduling Comparison: Segatz vs.\ HLFET Optimal Across Three Acceleration Scenarios (Kyber-512)}
+\label{tab:scheduling}
+\centering
+\begin{tabular}{l l r r r r}
+\toprule
+\textbf{Scenario} & \textbf{Operation} & \textbf{Segatz ($\mu$s)} & \textbf{HLFET ($\mu$s)} & \textbf{Gap (\%)} & \textbf{Speedup} \\
+\midrule
+\multirow{3}{*}{A: PC baseline} & KeyGen & 336.86 & 336.86 & 0.0 & 1.14$\times$ \\
+ & Encaps & 101.29 & 101.29 & 0.0 & 1.51$\times$ \\
+ & Decaps &  17.75 &  17.75 & 0.0 & 1.03$\times$ \\
+\midrule
+\multirow{3}{*}{B: HW accel (SHA/$6.1\times$, AES/$9.65\times$)} & KeyGen &  61.66 &  60.05 & 2.7 & 1.25$\times$ \\
+ & Encaps &  36.96 &  34.62 & 6.7 & 1.41$\times$ \\
+ & Decaps &  17.75 &  17.75 & 0.0 & 1.03$\times$ \\
+\midrule
+\multirow{3}{*}{C: Conservative (SHA/$4\times$, AES/$6\times$)} & KeyGen &  86.32 &  86.32 & 0.0 & 1.20$\times$ \\
+ & Encaps &  39.63 &  39.31 & 0.8 & 1.43$\times$ \\
+ & Decaps &  17.75 &  17.75 & 0.0 & 1.03$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The mechanism is clear: hardware acceleration disproportionately shrinks SHA/AES tasks that dominate the critical path, making arithmetic tasks relatively more significant. With more balanced weights, the Segatz assignment is no longer optimal. Fig.~\ref{fig:gantt_scenariob} visualizes this gap for the encapsulation operation.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{scenario_b_gantt.png}
+\caption{Gantt chart comparison under Scenario~B (ESP32 HW acceleration). Task colors: orange = SHA, blue = AES, green = arithmetic/NTT. The encapsulation panel shows the 6.7\% gap arising from suboptimal task placement in the Segatz schedule vs.\ HLFET optimal.}
+\label{fig:gantt_scenariob}
+\end{figure*}
+
+\subsection{FIPS 203 Gap Analysis}
+
+The compliance audit identified nine gaps, summarized in Table~\ref{tab:fips_gaps}. The three critical gaps all affect shared secret computation: GAP-1 omits domain separation ($G(d)$ instead of $G(d \| k)$), GAP-2 retains a removed pre-hash, and GAP-3 uses $\mathrm{KDF}(K' \| H(c))$ instead of direct $K$. Divergence testing confirmed 20/20 output divergence between the original and partially corrected versions across all three parameter sets ($k = 2, 3, 4$), with both versions independently passing round-trip consistency.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.1}
+\caption{FIPS 203 Compliance Gaps}
+\label{tab:fips_gaps}
+\centering
+\begin{tabular}{c l l}
+\toprule
+\textbf{ID} & \textbf{Description} & \textbf{Severity} \\
+\midrule
+1 & Missing $G(d \| k)$ domain separation & Critical \\
+2 & Extra $m \leftarrow H(m)$ pre-hash & Critical \\
+3 & KDF-based shared secret derivation & Critical \\
+4 & No modulus check on encaps key & Moderate \\
+5 & No input length/type validation & Moderate \\
+6 & 90s primitives not standardized & Moderate \\
+7 & Seed generated internally & Minor \\
+8 & ``Kyber'' naming vs.\ ``ML-KEM'' & Minor \\
+9 & Secret key layout order & Info. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ====================================================================
+%  V. DISCUSSION
+% ====================================================================
+\section{Discussion}
+
+The scheduling analysis reveals that the bottleneck in dual-core Kyber is structural: under software-only timing, the critical path through seed expansion and matrix generation is so dominant that scheduling decisions are trivially satisfied. The 0.0\% gap is a property of the task graph, not of the Segatz schedule. This connects to their observation that matrix generation is a candidate for optimization---our analysis provides the formal explanation.
+
+The sensitivity model makes a falsifiable prediction: under ESP32 hardware acceleration, the HLFET-optimal assignment recovers 2.34~$\mu$s (6.7\%) for encapsulation through better interleaving of noise sampling and NTT tasks. In high-throughput IoT scenarios with thousands of encapsulations, cumulative savings become meaningful. The result demonstrates that scheduling analysis should be revisited whenever execution weights change.
+
+The FIPS~203 findings have immediate deployment implications: any device running the current implementation cannot establish shared secrets with a conforming ML-KEM implementation. The gap taxonomy is applicable to any implementation derived from the 2022 pq-crystals codebase.
+
+% ====================================================================
+%  VI. CONCLUSION
+% ====================================================================
+\section{Conclusion}
+
+This paper presented a formal DAG scheduling analysis of the dual-core Kyber ESP32 implementation, establishing that the empirical schedule is provably optimal under software timing (0.0\% gap) due to scheduling saturation, but becomes suboptimal under hardware acceleration (6.7\% for encapsulation, 2.7\% for key generation). A concurrent FIPS~203 audit identified nine compliance gaps including three critical algorithmic differences, validated through 20/20 divergence testing. Future work should validate the HLFET-optimal schedule on ESP32 hardware and migrate the symmetric primitives from the 90s variant to FIPS~203-mandated SHA-3/SHAKE.
+
+% ====================================================================
+%  ACKNOWLEDGMENT
+% ====================================================================
+\section*{Acknowledgment}
+
+The authors thank Dr.\ Ritam Sharma for supervision and guidance, and IIIT Kota for providing the research environment.
+
+% ====================================================================
+%  REFERENCES
+% ====================================================================
+\begin{thebibliography}{16}
+
+\bibitem{segatz2022}
+F.~Segatz and M.~I.~A.~Al~Hafiz, ``Efficient implementation of CRYSTALS-KYBER key encapsulation mechanism on ESP32,'' \emph{arXiv preprint arXiv:2503.10207 [cs.CR]}, 2022.
+
+\bibitem{kyber2021}
+R.~Avanzi \emph{et~al.}, ``CRYSTALS-KYBER algorithm specifications and supporting documentation (version 3.02),'' NIST PQC Standardization, Round~3, 2021.
+
+\bibitem{fips203}
+National Institute of Standards and Technology, ``FIPS 203: Module-lattice-based key-encapsulation mechanism standard,'' Aug.\ 2024. [Online]. Available: \url{https://doi.org/10.6028/NIST.FIPS.203}
+
+\bibitem{pqcrystals}
+J.~Bos \emph{et~al.}, ``pq-crystals/kyber: Reference implementation,'' GitHub. [Online]. Available: \url{https://github.com/pq-crystals/kyber}
+
+\bibitem{shor1999}
+P.~W.~Shor, ``Polynomial-time algorithms for prime factorization and discrete logarithms on a quantum computer,'' \emph{SIAM Review}, vol.~41, no.~2, pp.~303--332, 1999.
+
+\bibitem{graham1969}
+R.~L.~Graham, ``Bounds on multiprocessing timing anomalies,'' \emph{SIAM J.\ Applied Mathematics}, vol.~17, no.~2, pp.~416--429, 1969.
+
+\bibitem{coffman1972}
+E.~G.~Coffman and R.~L.~Graham, ``Optimal scheduling for two-processor systems,'' \emph{Acta Informatica}, vol.~1, no.~3, pp.~200--213, 1972.
+
+\bibitem{kwok1999}
+Y.-K.~Kwok and I.~Ahmad, ``Static scheduling algorithms for allocating directed task graphs to multiprocessors,'' \emph{ACM Computing Surveys}, vol.~31, no.~4, pp.~406--471, 1999.
+
+\bibitem{adam1974}
+T.~L.~Adam, K.~M.~Chandy, and J.~R.~Dickson, ``A comparison of list schedules for parallel processing systems,'' \emph{Commun.\ ACM}, vol.~17, no.~12, pp.~685--690, 1974.
+
+\bibitem{esp32trm}
+Espressif Systems, ``ESP32 technical reference manual, version 4.7,'' 2022. [Online]. Available: \url{https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf}
+
+\bibitem{botros2019}
+L.~Botros, M.~J.~Kannwischer, and P.~Schwabe, ``Memory-efficient high-speed implementation of Kyber on Cortex-M4,'' in \emph{AFRICACRYPT 2019}, pp.~209--228, Springer, 2019.
+
+\bibitem{wang2020}
+B.~Wang, X.~Gu, and Y.~Yang, ``Saber on ESP32,'' in \emph{ACNS 2020}, pp.~421--440, Springer, 2020.
+
+\bibitem{buerstinghaus2020}
+K.~B\"{u}rstinghaus-Steinbach, C.~Krau\ss, R.~Niederhagen, and M.~Schneider, ``Post-quantum TLS on embedded systems: Integrating and evaluating Kyber and SPHINCS+ with Mbed TLS,'' in \emph{ASIA CCS '20}, pp.~841--852, ACM, 2020.
+
+\bibitem{segatz2022repo}
+F.~Segatz and M.~I.~A.~Al~Hafiz, ``kybesp32: Kyber on ESP32,'' GitHub. [Online]. Available: \url{https://github.com/fsegatz/kybesp32}
+
+\bibitem{sonawane2026repo}
+K.~Sonawane, A.~Gupta, and Bhavesh, ``PQC-SA: Formal scheduling analysis of CRYSTALS-Kyber on ESP32,'' GitHub, 2026. [Online]. Available: \url{https://github.com/karans7104/PQC-SA}
+
+\bibitem{nist2022announce}
+National Institute of Standards and Technology, ``NIST announces first four quantum-resistant cryptographic algorithms,'' Jul.\ 2022.
+
+\end{thebibliography}
+
+\end{document}
